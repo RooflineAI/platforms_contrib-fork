@@ -9,13 +9,9 @@ X86_64_FEATURES = {
 
 X86_64_LEVELS = X86_64_FEATURES.keys()
 
-# Additional CPU features that are not part of any x86-64 microarchitecture level (v1-v4). These
-# describe optional hardware capabilities such as AES-NI, carry-less multiplication, or AVX-512
-# extensions beyond the v4 baseline.
-#
-# Use cpu_features names (https://github.com/google/cpu_features) where available so //host:native
-# can map CPUID capabilities directly to constraints. Otherwise, use common lowercase names
-# with `.` and `-` replaced by `_` (e.g. `amx_bf16`, `avx10_1`).
+# Optional features outside the x86-64 levels. Use cpu_features names
+# (https://github.com/google/cpu_features) where available; otherwise use lowercase names
+# with `.` and `-` replaced by `_`.
 X86_64_FEATURES_WITHOUT_LEVEL = [
     "adx",
     "aes",
@@ -101,14 +97,9 @@ X86_64_FEATURES_WITHOUT_LEVEL = [
     "xsaves",
 ]
 
-# Maps a feature to another feature that it extends. The feature's constraint setting refines the
-# parent feature's `available` constraint value, expressing that the feature can only be present on a
-# platform that also has the parent. For example, the AVX-512 extensions require AVX-512 Foundation
-# (avx512f), and the wider/vectorized variants of AES and carry-less multiplication build on their
-# scalar counterparts. Features not listed here refine `@platforms//cpu:x86_64` and are otherwise
-# independent.
+# Feature prerequisites used by constraint_setting.refines_constraint_value.
+# Unlisted features refine @platforms//cpu:x86_64.
 X86_64_FEATURE_REFINEMENTS = {
-    # AVX-512 extensions beyond the v4 baseline all build on AVX-512 Foundation.
     "avx512_bf16": "avx512f",
     "avx512_fp16": "avx512f",
     "avx512_vp2intersect": "avx512f",
@@ -118,23 +109,18 @@ X86_64_FEATURE_REFINEMENTS = {
     "avx512vbmi2": "avx512f",
     "avx512vnni": "avx512f",
     "avx512vpopcntdq": "avx512f",
-    # AMX extensions build on the AMX tile architecture.
     "amx_bf16": "amx_tile",
     "amx_complex": "amx_tile",
     "amx_fp16": "amx_tile",
     "amx_int8": "amx_tile",
     "amx_avx512": "amx_tile",
     "amx_tf32": "amx_tile",
-    # The extended xsave instructions build on the base xsave feature.
     "xsavec": "xsave",
     "xsaveopt": "xsave",
     "xsaves": "xsave",
-    # Vectorized variants build on their scalar counterparts.
     "vaes": "aes",
     "vpclmulqdq": "pclmulqdq",
-    # Key Locker wide instructions build on Key Locker.
     "widekl": "kl",
-    # The AVX10 versions form a chain.
     "avx10_2": "avx10_1",
 }
 
@@ -146,5 +132,5 @@ def _features_up_to(level):
             break
     return features
 
-# The features included in each microarchitecture level, including all lower levels.
+# Each level includes the features of all lower levels.
 FEATURES_UP_TO = {level: _features_up_to(level) for level in X86_64_LEVELS}

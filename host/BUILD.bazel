@@ -1,28 +1,23 @@
 load("@libc_constraints//:constraints.bzl", "LIBC_CONSTRAINTS")
 load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 
-# Host platforms extending @platforms//host's OS and CPU constraints with values detected at
-# repository fetch time. Neither is registered automatically; select one with --host_platform,
-# --platforms or --extra_execution_platforms.
+# Host platforms with constraints detected at repository fetch time.
+# Select explicitly with --host_platform, --platforms or --extra_execution_platforms.
 #
 # TODO: Use the parent chain @platforms//host -> :generic -> //host/private:native once all
 # supported Bazel versions honor inherited constraints in toolchain resolution:
 # https://github.com/bazelbuild/bazel/issues/31388.
 #
-# :generic adds system library constraints (currently Linux libc and version). Use it for host
-# tools and binaries shared with machines that have the same OS, CPU architecture and libraries.
+# :generic adds system libraries (currently Linux libc and version) to the host's OS and CPU.
 platform(
     name = "generic",
     constraint_values = HOST_CONSTRAINTS + LIBC_CONSTRAINTS,
     visibility = ["//visibility:public"],
 )
 
-# :native also adds this machine's CPU features and x86-64 level. Like -march=native, toolchains
-# using these constraints may produce binaries that only run here. Use it only for binaries that
-# stay on this host.
+# :native adds the host's detected CPU features. Toolchains may emit code requiring them.
 #
-# The alias defers downloading and running the CPU detector until :native is used, so loading
-# this package for :generic doesn't trigger CPU detection.
+# The alias keeps CPU detection lazy when only :generic is used.
 alias(
     name = "native",
     actual = "//host/private:native",

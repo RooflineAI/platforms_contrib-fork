@@ -1,10 +1,6 @@
-"""Maps detect_cpu output to //cpu/x86_64/feature constraint names.
+"""Maps cpu_features output to //cpu/x86_64/feature constraints.
 
-The detector (//prebuilt) reports cpu_features names (https://github.com/google/cpu_features).
-Each feature with a constraint becomes `<feature>` or `no_<feature>`. Unreported features keep
-their defaults unless implied by an available feature.
-
-Unknown feature names fail detection; known names are mapped to constraints or explicitly ignored.
+Unreported features keep their defaults unless inferred from a reported feature.
 """
 
 load(
@@ -18,9 +14,9 @@ visibility("private")
 
 # Unreported features implied by available features.
 _X86_64_INFERRED_FEATURES = {
-    # x86-64 CPUs with SSE4.2 also support LAHF/SAHF in 64-bit mode.
+    # Approximate LAHF/SAHF support using SSE4.2.
     "lahf_sahf": "sse4_2",
-    # cpu_features only reports AVX if the CPU supports XSAVE and the OS has enabled it.
+    # cpu_features gates AVX on CPU and OS support for XSAVE.
     "osxsave": "avx",
     "xsave": "avx",
 }
@@ -32,18 +28,18 @@ _X86_64_SETTABLE_FEATURES = [
     for feature in features
 ] + X86_64_FEATURES_WITHOUT_LEVEL
 
-# Features reported by cpu_features 0.11.0 but deliberately omitted from constraints.
+# cpu_features 0.11.0 fields without constraints.
 _X86_64_IGNORED_FEATURES = [
     # Present on every x86-64 CPU in practice, but not part of the psABI v1 baseline.
     "clfsh",
     "tsc",
-    # Implementation details and system capabilities that don't affect code generation.
+    # System capabilities.
     "dca",
     "lam",
     "smx",
     "ss",
     "uai",
-    # Number of 512-bit FMA units; affects performance, not instruction availability.
+    # Model/brand heuristic, not a CPUID feature.
     "avx512_second_fma",
     # Discontinued Xeon Phi-only extensions, removed from LLVM.
     "avx512_4fmaps",
@@ -57,8 +53,7 @@ _X86_64_IGNORED_FEATURES = [
 
 _X86_64_KNOWN_FEATURES = _X86_64_SETTABLE_FEATURES + _X86_64_IGNORED_FEATURES
 
-# Expected feature count from cpu_features 0.11.0. Reject other sizes to catch detector version
-# mismatches and truncated output.
+# cpu_features 0.11.0 reports 74 features; reject incomplete or mismatched output.
 _X86_64_REPORT_SIZE = 74
 
 def x86_64_feature_constraint_names(reported_features):

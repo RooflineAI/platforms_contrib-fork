@@ -1,5 +1,5 @@
-// Prints every cpu_features enum name on its own line, prefixed with "+" if available or "-"
-// otherwise (e.g. "+sse4_2", "-avx512f"). See //private:feature_mapping.bzl for constraint mappings.
+// Prints each cpu_features name with "+" if available, "-" otherwise.
+// Constraint mappings are in //private:feature_mapping.bzl.
 
 #include <stdio.h>
 

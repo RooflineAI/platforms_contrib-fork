@@ -2,12 +2,9 @@
 
 visibility("private")
 
-# Detectors keyed by @platforms//host's (os, cpu) constraints. Hosts without an entry get no CPU
-# feature constraints. Currently only x86-64 is supported.
+# Keys are @platforms//host's (os, cpu) labels; unlisted hosts get no CPU feature constraints.
 #
-# Run release-prebuilts.sh to build and publish //prebuilt via the prebuilts.yaml workflow.
-# Copy the release notes' snippets here and into MODULE.bazel's use_repo; host_detection creates
-# an http_file repo for each entry using prebuilt_detector_repo_name.
+# Run release-prebuilts.sh, then copy the release notes' snippets here and into MODULE.bazel.
 PREBUILT_DETECTORS = {
     (Label("@platforms//os:linux"), Label("@platforms//cpu:x86_64")): struct(
         url = "https://github.com/bazel-contrib/platforms_contrib/releases/download/prebuilts-v0.0.2/detect_cpu_linux_x86_64",
