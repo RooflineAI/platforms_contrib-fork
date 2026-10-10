@@ -35,7 +35,8 @@ jobs:
             folder: "."
             os: ubuntu-latest
             # Wildcard patterns omit platform() targets; list them explicitly.
-            extra_targets: //host:generic //host:native
+            # Building LLVM for //prebuilt is expensive, so only the 10.* job covers it.
+            extra_targets: //host:generic //host:native -//prebuilt/...
           - bazelversion: 10.*
             folder: "."
             os: ubuntu-latest
@@ -62,7 +63,7 @@ jobs:
       - name: bazel test //...
         working-directory: ${{ matrix.folder }}
         shell: bash
-        run: bazel test --config=ci ${{ matrix.test_flags }} //... ${{ matrix.extra_targets }}
+        run: bazel test --config=ci ${{ matrix.test_flags }} -- //... ${{ matrix.extra_targets }}
 
   host-libc-detection:
     name: host-libc-detection (${{ matrix.name }})

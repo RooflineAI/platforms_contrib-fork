@@ -39,8 +39,6 @@ def _detect_x86_64_features(rctx):
             stderr = result.stderr,
         ))
 
-    if not result.stdout.lstrip().startswith("{"):
-        fail("Unsupported CPU detector output; update PREBUILT_DETECTORS to the LLVM detector release")
     return json.decode(result.stdout)
 
 def _cpu_feature_constraints_impl(rctx):

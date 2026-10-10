@@ -4,7 +4,8 @@ visibility("private")
 
 # Keys are @platforms//host's (os, cpu) labels; unlisted hosts get no CPU feature constraints.
 #
-# Run release-prebuilts.sh, then copy the release notes' snippets here and into MODULE.bazel.
+# Run release-prebuilts.sh, then copy the release notes' snippet here. After adding a platform,
+# run `bazel mod tidy` to add its detector repo to MODULE.bazel.
 PREBUILT_DETECTORS = {
     (Label("@platforms//os:linux"), Label("@platforms//cpu:x86_64")): struct(
         url = "https://github.com/bazel-contrib/platforms_contrib/releases/download/prebuilts-v0.0.2/detect_cpu_linux_x86_64",

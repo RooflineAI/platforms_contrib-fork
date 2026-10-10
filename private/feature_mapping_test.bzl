@@ -6,7 +6,6 @@ visibility("private")
 
 def _report():
     return {
-        "schema": 1,
         "llvm_version": "23.1.2",
         "cpu": "generic",
         "features": {name: False for name in X86_64_LLVM_FEATURES + ["cmov", "64bit", "cx8"]},
@@ -37,8 +36,8 @@ def _unknown_feature_test(env):
     env.expect.that_str(validation_for_tests.report_error(report)).contains("unknown [sse4_2]")
 
 def _malformed_report_test(env):
-    for report in [None, [], {}, {"schema": 2}]:
-        env.expect.that_str(validation_for_tests.report_error(report)).contains("schema")
+    for report in [None, []]:
+        env.expect.that_str(validation_for_tests.report_error(report)).contains("JSON object")
     report = _report()
     report["features"]["avx"] = 1
     env.expect.that_str(validation_for_tests.report_error(report)).contains("must be a boolean")

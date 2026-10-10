@@ -30,8 +30,8 @@ def _feature_map_error(features, expected, kind):
     return None
 
 def _report_error(report):
-    if type(report) != "dict" or report.get("schema") != 1:
-        return "Unsupported CPU detector schema; update PREBUILT_DETECTORS"
+    if type(report) != "dict":
+        return "The CPU feature detector must report a JSON object"
     for field in ["cpu", "llvm_version"]:
         if type(report.get(field)) != "string" or not report[field]:
             return "The CPU feature detector must report a nonempty " + field

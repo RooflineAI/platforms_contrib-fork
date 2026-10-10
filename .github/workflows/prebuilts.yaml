@@ -1,8 +1,8 @@
 name: Prebuilts
 
 # Builds and releases CPU feature detectors for all supported x86-64 hosts.
-# Push a `prebuilts-v*` tag with release-prebuilts.sh, then copy the release notes' snippets
-# into private/prebuilts.bzl and MODULE.bazel.
+# Push a `prebuilts-v*` tag with release-prebuilts.sh, then copy the release notes' snippet
+# into private/prebuilts.bzl.
 on:
   push:
     tags:
@@ -57,7 +57,6 @@ jobs:
             echo
             echo '```python'
             echo "PREBUILT_DETECTORS = {"
-            repos=()
             for artifact in dist/*; do
               name="$(basename "${artifact}")"
               # detect_cpu_<os>_<cpu>[.exe]
@@ -69,7 +68,6 @@ jobs:
               if [[ "${os}" == macos ]]; then
                 os=osx
               fi
-              repos+=("detect_cpu_${os}_${cpu}")
               integrity="sha256-$(openssl dgst -sha256 -binary "${artifact}" | base64)"
               echo "    (Label(\"@platforms//os:${os}\"), Label(\"@platforms//cpu:${cpu}\")): struct("
               echo "        url = \"https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${name}\","
@@ -77,12 +75,6 @@ jobs:
               echo "    ),"
             done
             echo "}"
-            echo '```'
-            echo
-            echo "and list the backing repos in MODULE.bazel:"
-            echo
-            echo '```python'
-            echo "use_repo(host_detection, \"cpu_feature_constraints\", $(printf '"%s", ' "${repos[@]}")\"libc_constraints\")"
             echo '```'
             echo
             echo "Verify an artifact's provenance with:"

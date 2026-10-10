@@ -29,7 +29,6 @@ int main() {
   }
   llvm::outs()
       << llvm::json::Value(llvm::json::Object{
-             {"schema", 1},
              {"llvm_version", LLVM_VERSION_STRING},
              {"cpu", llvm::sys::getHostCPUName()},
              {"features", toJson(platforms_contrib::resolveFeatures(host))},
