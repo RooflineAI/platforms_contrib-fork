@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 static void check(bool ok, const std::string &message) {
@@ -61,6 +62,17 @@ int main(int argc, char **argv) {
   inventory["cmov"] = true;
   inventory["64bit"] = true;
 
+  auto checkSame = [&](const llvm::StringMap<bool> &actual,
+                       const llvm::StringMap<bool> &expected,
+                       const std::string &context) {
+    for (const auto &feature : inventory) {
+      auto name = feature.getKey();
+      if (name != "64bit")
+        check(actual.lookup(name) == expected.lookup(name),
+              context + ": " + name.str());
+    }
+  };
+
 #if defined(__x86_64__) || defined(_M_X64)
   auto host = llvm::sys::getHostCPUFeatures();
   auto resolved = platforms_contrib::resolveFeatures(host);
@@ -77,6 +89,13 @@ int main(int argc, char **argv) {
                                        diagnosticOptions);
   llvm::SmallVector<llvm::StringRef> cpus;
   llvm::X86::fillValidCPUArchList(cpus, true);
+  // Overrides accumulate per CPU.
+  const std::vector<std::vector<std::pair<llvm::StringRef, bool>>> steps = {
+      {},
+      {{"avx", false}, {"avx512f", false}, {"xsave", false}},
+      {{"avx10.1", true}, {"avx10.2", true}, {"sha512", true}},
+      {{"mmx", false}, {"sse", false}, {"sse2", false}},
+  };
   for (auto triple : {"x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc",
                       "x86_64-apple-darwin"}) {
     for (auto cpu : cpus) {
@@ -96,20 +115,9 @@ int main(int argc, char **argv) {
       std::unique_ptr<clang::TargetInfo> target(
           clang::TargetInfo::CreateTargetInfo(diagnostics, options));
       check(bool(target), "create target for " + cpu.str());
-      for (int scenario = 0; scenario < 4; ++scenario) {
-        if (scenario == 1) {
-          raw["avx"] = false;
-          raw["avx512f"] = false;
-          raw["xsave"] = false;
-        } else if (scenario == 2) {
-          raw["avx10.1"] = true;
-          raw["avx10.2"] = true;
-          raw["sha512"] = true;
-        } else if (scenario == 3) {
-          raw["mmx"] = false;
-          raw["sse"] = false;
-          raw["sse2"] = false;
-        }
+      for (const auto &step : steps) {
+        for (auto [name, enabled] : step)
+          raw[name] = enabled;
         std::vector<std::string> flags;
         for (const auto &feature : raw)
           flags.push_back((feature.getValue() ? "+" : "-") +
@@ -118,13 +126,7 @@ int main(int argc, char **argv) {
         check(target->initFeatureMap(native, diagnostics, cpu, flags),
               "native feature map");
         auto effective = platforms_contrib::resolveFeatures(raw);
-        for (const auto &feature : inventory) {
-          auto name = feature.getKey();
-          if (name == "64bit")
-            continue;
-          check(native.lookup(name) == effective.lookup(name),
-                cpu.str() + ": " + name.str() + " differs from Clang");
-        }
+        checkSame(native, effective, cpu.str() + " differs from Clang");
 
         flags.clear();
         for (bool enabled : {true, false})
@@ -134,13 +136,7 @@ int main(int argc, char **argv) {
         llvm::StringMap<bool> replay;
         check(target->initFeatureMap(replay, diagnostics, "x86-64", flags),
               "replayed feature map");
-        for (const auto &feature : inventory) {
-          if (feature.getKey() == "64bit")
-            continue;
-          check(replay.lookup(feature.getKey()) ==
-                    effective.lookup(feature.getKey()),
-                cpu.str() + ": replay changed " + feature.getKey().str());
-        }
+        checkSame(replay, effective, cpu.str() + " replay changed");
       }
     }
   }

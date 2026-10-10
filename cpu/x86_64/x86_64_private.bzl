@@ -110,7 +110,7 @@ X86_64_EXTRA_FEATURES = [
     "rdtscp",
 ]
 
-X86_64_CLANG_FEATURES = sorted([
+X86_64_LLVM_FEATURES = sorted([
     feature
     for features in X86_64_FEATURES.values()
     for feature in features

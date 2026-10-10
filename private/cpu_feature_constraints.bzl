@@ -44,16 +44,14 @@ def _detect_x86_64_features(rctx):
     return json.decode(result.stdout)
 
 def _cpu_feature_constraints_impl(rctx):
-    report = None
-    if Label("@platforms//cpu:x86_64") in _HOST_CONSTRAINTS:
-        report = _detect_x86_64_features(rctx)
+    report = _detect_x86_64_features(rctx)
     feature_names = x86_64_feature_constraint_names(report) if report != None else []
 
-    constraints = [Label("//cpu/x86_64/feature:" + name) for name in feature_names]
+    constraints = [str(Label("//cpu/x86_64/feature:" + name)) for name in feature_names]
 
     rctx.file("BUILD.bazel", 'exports_files(["constraints.bzl", "detector.json"])\n')
     rctx.file("constraints.bzl", "CPU_FEATURE_CONSTRAINTS = {}\n".format(
-        "[\n" + "".join(['    "{}",\n'.format(constraint) for constraint in constraints]) + "]" if constraints else "[]",
+        json.encode_indent(constraints, indent = "    "),
     ))
 
     rctx.file("detector.json", json.encode_indent(report) + "\n")
@@ -62,8 +60,7 @@ def _cpu_feature_constraints_impl(rctx):
         return rctx.repo_metadata(
             reproducible = False,
         )
-    else:
-        return None
+    return None
 
 cpu_feature_constraints = repository_rule(
     implementation = _cpu_feature_constraints_impl,

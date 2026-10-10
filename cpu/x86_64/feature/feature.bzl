@@ -15,17 +15,12 @@ def x86_64_feature(name, available_by_default = False, refines = None):
         default_constraint_value = name if available_by_default else "no_" + name,
         refines_constraint_value = refines or "@platforms//cpu:x86_64",
     )
-    native.constraint_value(
-        name = name,
-        constraint_setting = ":" + name + "_setting",
-        visibility = ["//visibility:public"],
-    )
-    native.constraint_value(
-        name = "no_" + name,
-        constraint_setting = ":" + name + "_setting",
-        visibility = ["//visibility:public"],
-    )
     for suffix, value in [("enabled", name), ("disabled", "no_" + name)]:
+        native.constraint_value(
+            name = value,
+            constraint_setting = ":" + name + "_setting",
+            visibility = ["//visibility:public"],
+        )
         native.config_setting(
             name = name + "_" + suffix,
             constraint_values = ["@platforms//cpu:x86_64", ":" + value],

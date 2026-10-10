@@ -1,5 +1,5 @@
 load("@rules_testing//lib:test_suite.bzl", "test_suite")
-load("//cpu/x86_64:x86_64_private.bzl", "X86_64_CLANG_FEATURES", "X86_64_EXTRA_FEATURES")
+load("//cpu/x86_64:x86_64_private.bzl", "X86_64_EXTRA_FEATURES", "X86_64_LLVM_FEATURES")
 load(":feature_mapping.bzl", "validation_for_tests", "x86_64_feature_constraint_names")
 
 visibility("private")
@@ -9,7 +9,7 @@ def _report():
         "schema": 1,
         "llvm_version": "23.1.2",
         "cpu": "generic",
-        "features": {name: False for name in X86_64_CLANG_FEATURES + ["cmov", "64bit", "cx8"]},
+        "features": {name: False for name in X86_64_LLVM_FEATURES + ["cmov", "64bit", "cx8"]},
         "extras": {name: False for name in X86_64_EXTRA_FEATURES},
     }
 
@@ -20,10 +20,10 @@ def _explicit_negatives_test(env):
     report["features"]["avx512bf16"] = True
     report["extras"]["rdtscp"] = True
     names = x86_64_feature_constraint_names(report)
-    env.expect.that_int(len(names)).equals(len(X86_64_CLANG_FEATURES) + len(X86_64_EXTRA_FEATURES))
+    env.expect.that_int(len(names)).equals(len(X86_64_LLVM_FEATURES) + len(X86_64_EXTRA_FEATURES))
     for name in ["x87", "avx512bf16", "rdtscp", "no_sse", "no_crc32", "no_push2pop2", "no_ppx", "no_ermsb"]:
         env.expect.that_bool(name in names).equals(True)
-    for name in ["cmov", "64bit", "no_cmov", "no_64bit", "avx512_bf16", "fpu"]:
+    for name in ["cmov", "64bit", "cx8", "no_cmov", "no_64bit", "no_cx8"]:
         env.expect.that_bool(name in names).equals(False)
 
 def _missing_feature_test(env):

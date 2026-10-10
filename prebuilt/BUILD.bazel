@@ -1,11 +1,10 @@
-# Cross-compiles //host:native's CPU detector for supported x86-64 hosts with the hermetic llvm
-# toolchain. The prebuilts.yaml workflow releases :for_all_platforms on `prebuilts-v*` tags;
-# //private:prebuilts.bzl references the released binaries.
+# Cross-compiles the CPU detector with @llvm. The prebuilts workflow releases
+# :for_all_platforms; //private:prebuilts.bzl lists the released binaries.
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//cpu/x86_64:x86_64_private.bzl", "X86_64_CLANG_FEATURES")
+load("//cpu/x86_64:x86_64_private.bzl", "X86_64_LLVM_FEATURES")
 load(":cfg_variants.bzl", "linux_x86_64_filegroup", "macos_x86_64_filegroup", "windows_x86_64_filegroup")
 
 cc_library(
@@ -17,9 +16,7 @@ cc_library(
 
 cc_binary(
     name = "detect_cpu",
-    srcs = select({
-        "@platforms//cpu:x86_64": ["detect_cpu_x86_64.cc"],
-    }),
+    srcs = ["detect_cpu_x86_64.cc"],
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":cpu_features",
@@ -31,7 +28,7 @@ cc_binary(
 cc_test(
     name = "cpu_features_test",
     srcs = ["cpu_features_test.cc"],
-    args = X86_64_CLANG_FEATURES,
+    args = X86_64_LLVM_FEATURES,
     deps = [
         ":cpu_features",
         "@llvm-project//clang:basic",

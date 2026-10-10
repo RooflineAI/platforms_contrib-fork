@@ -6,7 +6,6 @@
 #include "llvm/TargetParser/Host.h"
 
 #include <cpuid.h>
-#include <utility>
 
 static platforms_contrib::CpuidRegisters cpuid(unsigned leaf,
                                                unsigned subleaf) {

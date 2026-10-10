@@ -2,16 +2,16 @@
 
 load(
     "//cpu/x86_64:x86_64_private.bzl",
-    "X86_64_CLANG_FEATURES",
     "X86_64_EXTRA_FEATURES",
     "X86_64_FEATURE_REFINEMENTS",
+    "X86_64_LLVM_FEATURES",
 )
 
 visibility("private")
 
 # Fixed x86-64 capabilities without useful driver-level disable controls.
 _X86_64_FIXED_FEATURES = ["64bit", "cmov", "cx8"]
-_X86_64_REPORTED_FEATURES = X86_64_CLANG_FEATURES + _X86_64_FIXED_FEATURES
+_X86_64_REPORTED_FEATURES = X86_64_LLVM_FEATURES + _X86_64_FIXED_FEATURES
 
 def _feature_map_error(features, expected, kind):
     if type(features) != "dict":
@@ -52,7 +52,7 @@ def x86_64_feature_constraint_names(report):
     features = report["features"] | report["extras"]
     return sorted([
         name if features[name] else "no_" + name
-        for name in X86_64_CLANG_FEATURES + X86_64_EXTRA_FEATURES
+        for name in X86_64_LLVM_FEATURES + X86_64_EXTRA_FEATURES
     ])
 
 validation_for_tests = struct(report_error = _report_error)
