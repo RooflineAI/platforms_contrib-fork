@@ -1,2 +1,3 @@
-# Preserve line endings across platforms for byte-for-byte output tests.
-* -text
+# Normalize line endings to LF on checkin and always check out LF, even on
+# Windows. Binary files are detected by content and left untouched.
+* text=auto eol=lf
