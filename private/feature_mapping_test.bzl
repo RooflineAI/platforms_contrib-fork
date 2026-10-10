@@ -7,7 +7,7 @@ visibility("private")
 def _report():
     return {
         "schema": 1,
-        "llvm_version": "22.1.8",
+        "llvm_version": "23.1.2",
         "cpu": "generic",
         "features": {name: False for name in X86_64_CLANG_FEATURES + ["cmov", "64bit", "cx8"]},
         "extras": {name: False for name in X86_64_EXTRA_FEATURES},

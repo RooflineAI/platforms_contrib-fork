@@ -13,10 +13,8 @@ llvm::StringMap<bool> resolveFeatures(const llvm::StringMap<bool> &host) {
                                      resolved);
   }
 
-  // LLVM omits x87 and, on Windows, these two APX features from its host map.
+  // LLVM omits x87 from its host map.
   resolved["x87"] = true;
-  resolved.try_emplace("push2pop2", false);
-  resolved.try_emplace("ppx", false);
   return resolved;
 }
 

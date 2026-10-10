@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        bazelversion: [7.*, 8.*, 9.*, last_green]
+        bazelversion: [7.*, 8.*, 9.*, 10.*, last_green]
         folder: [examples]
         os: [ubuntu-latest]
         include:
@@ -35,6 +35,10 @@ jobs:
             folder: "."
             os: ubuntu-latest
             # Wildcard patterns omit platform() targets; list them explicitly.
+            extra_targets: //host:generic //host:native
+          - bazelversion: 10.*
+            folder: "."
+            os: ubuntu-latest
             extra_targets: //host:generic //host:native
           # Exercise host platform detection on all supported operating systems.
           - bazelversion: 9.*

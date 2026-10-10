@@ -90,10 +90,6 @@ int main(int argc, char **argv) {
         if (feature != "x87")
           raw[feature] = true;
       }
-      if (std::string(triple).find("windows") != std::string::npos) {
-        raw.erase("push2pop2");
-        raw.erase("ppx");
-      }
       clang::TargetOptions options;
       options.Triple = triple;
       options.CPU = cpu.str();

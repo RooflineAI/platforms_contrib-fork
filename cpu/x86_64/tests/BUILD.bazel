@@ -1,3 +1,3 @@
-load(":clang_test.bzl", "clang_test_suite")
+load(":feature_test.bzl", "feature_test_suite")
 
-clang_test_suite(name = "clang")
+feature_test_suite(name = "feature")

@@ -21,9 +21,9 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Configure Bazel version
-        run: echo "9.1.1" > .bazelversion
+        run: echo "9.3.0" > .bazelversion
 
-      - name: Test feature detection and flag mapping
+      - name: Test feature detection and constraints
         run: bazel test -c opt //prebuilt:cpu_features_test //private/... //cpu/x86_64/tests/...
 
       - name: Build detectors for all platforms

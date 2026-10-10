@@ -11,7 +11,7 @@
 # Reference these values directly, e.g. `@platforms_contrib//cpu/x86_64/feature:avx`.
 # Use `<feature>_enabled` and `<feature>_disabled` as select() keys.
 # The ermsb, fsrm, fzrm, fsrs, fsrc, and rdtscp selectors report CPUID bits;
-# the remaining features follow LLVM 22.1.8, including its OS-state checks.
+# the remaining features follow LLVM 23.1.2, including its OS-state checks.
 
 load(
     "//cpu/x86_64:x86_64_private.bzl",
