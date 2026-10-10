@@ -23,6 +23,9 @@ jobs:
       - name: Configure Bazel version
         run: echo "9.1.1" > .bazelversion
 
+      - name: Test feature detection and flag mapping
+        run: bazel test -c opt //prebuilt:cpu_features_test //private/... //cpu/x86_64/tests/...
+
       - name: Build detectors for all platforms
         run: bazel build -c opt //prebuilt:for_all_platforms
 

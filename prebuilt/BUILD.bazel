@@ -4,14 +4,40 @@
 
 load("@bazel_lib//lib:transitions.bzl", "platform_transition_filegroup")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+load("//cpu/x86_64:x86_64_private.bzl", "X86_64_CLANG_FEATURES")
+
+cc_library(
+    name = "cpu_features",
+    srcs = ["cpu_features.cc"],
+    hdrs = ["cpu_features.h"],
+    deps = ["@llvm-project//llvm:TargetParser"],
+)
 
 cc_binary(
     name = "detect_cpu",
     srcs = select({
-        "@platforms//cpu:x86_64": ["detect_cpu_x86_64.c"],
+        "@platforms//cpu:x86_64": ["detect_cpu_x86_64.cc"],
     }),
     target_compatible_with = ["@platforms//cpu:x86_64"],
-    deps = ["@cpu_features//:cpuinfo"],
+    deps = [
+        ":cpu_features",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//llvm:TargetParser",
+    ],
+)
+
+cc_test(
+    name = "cpu_features_test",
+    srcs = ["cpu_features_test.cc"],
+    args = X86_64_CLANG_FEATURES,
+    deps = [
+        ":cpu_features",
+        "@llvm-project//clang:basic",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//llvm:TargetParser",
+    ],
 )
 
 [

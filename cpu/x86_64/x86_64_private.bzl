@@ -1,57 +1,55 @@
-visibility(["//cpu/x86_64/...", "//private"])
+visibility(["//cpu/x86_64/...", "//private", "//prebuilt"])
 
+# Baseline features default to enabled; explicit negatives support freestanding code.
 X86_64_FEATURES = {
-    "v1": ["cmov", "cx8", "fpu", "fxsr", "mmx", "osfxsr", "sce", "sse", "sse2"],
-    "v2": ["cx16", "lahf_sahf", "popcnt", "sse3", "sse4_1", "sse4_2", "ssse3"],
-    "v3": ["avx", "avx2", "bmi1", "bmi2", "f16c", "fma3", "lzcnt", "movbe", "osxsave"],
+    "v1": ["fxsr", "mmx", "sse", "sse2", "x87"],
+    "v2": ["crc32", "cx16", "popcnt", "sahf", "sse3", "sse4.1", "sse4.2", "ssse3"],
+    "v3": ["avx", "avx2", "bmi", "bmi2", "f16c", "fma", "lzcnt", "movbe", "xsave"],
     "v4": ["avx512bw", "avx512cd", "avx512dq", "avx512f", "avx512vl"],
 }
 
 X86_64_LEVELS = X86_64_FEATURES.keys()
 
-# Optional features outside the x86-64 levels. Use cpu_features names
-# (https://github.com/google/cpu_features) where available; otherwise use lowercase names
-# with `.` and `-` replaced by `_`.
+# LLVM feature names, excluding the levels above and deprecated compatibility flags.
 X86_64_FEATURES_WITHOUT_LEVEL = [
     "adx",
     "aes",
-    "amx_avx512",
-    "amx_bf16",
-    "amx_complex",
-    "amx_fp16",
-    "amx_int8",
-    "amx_tf32",
-    "amx_tile",
-    "apxf",
-    "avx10_1",
-    "avx10_2",
-    "avx512_bf16",
-    "avx512_fp16",
-    "avx512_vp2intersect",
+    "amx-avx512",
+    "amx-bf16",
+    "amx-complex",
+    "amx-fp16",
+    "amx-fp8",
+    "amx-int8",
+    "amx-movrs",
+    "amx-tf32",
+    "amx-tile",
+    "avx10.1",
+    "avx10.2",
+    "avx512bf16",
     "avx512bitalg",
+    "avx512fp16",
     "avx512ifma",
     "avx512vbmi",
     "avx512vbmi2",
     "avx512vnni",
+    "avx512vp2intersect",
     "avx512vpopcntdq",
-    "avx_vnni",
     "avxifma",
     "avxneconvert",
+    "avxvnni",
     "avxvnniint16",
     "avxvnniint8",
+    "ccmp",
+    "cf",
     "cldemote",
     "clflushopt",
     "clwb",
     "clzero",
     "cmpccxadd",
+    "egpr",
     "enqcmd",
-    "erms",
     "fma4",
-    "fs_rep_cmpsb_scasb",
-    "fs_rep_mov",
-    "fs_rep_stosb",
     "fsgsbase",
-    "fz_rep_movsb",
     "gfni",
     "hreset",
     "invpcid",
@@ -61,12 +59,16 @@ X86_64_FEATURES_WITHOUT_LEVEL = [
     "movdiri",
     "movrs",
     "mwaitx",
-    "pclmulqdq",
+    "ndd",
+    "nf",
+    "pclmul",
     "pconfig",
     "pku",
+    "ppx",
     "prefetchi",
     "prfchw",
     "ptwrite",
+    "push2pop2",
     "raoint",
     "rdpid",
     "rdpru",
@@ -91,37 +93,55 @@ X86_64_FEATURES_WITHOUT_LEVEL = [
     "wbnoinvd",
     "widekl",
     "xop",
-    "xsave",
     "xsavec",
     "xsaveopt",
     "xsaves",
+    "zu",
 ]
+
+# Additional CPUID capabilities useful for BUILD selections.
+X86_64_EXTRA_FEATURES = [
+    "ermsb",
+    "fsrc",
+    "fsrm",
+    "fsrs",
+    "fzrm",
+    "rdtscp",
+]
+
+X86_64_CLANG_FEATURES = sorted([
+    feature
+    for features in X86_64_FEATURES.values()
+    for feature in features
+] + X86_64_FEATURES_WITHOUT_LEVEL)
 
 # Feature prerequisites used by constraint_setting.refines_constraint_value.
 # Unlisted features refine @platforms//cpu:x86_64.
 X86_64_FEATURE_REFINEMENTS = {
-    "avx512_bf16": "avx512f",
-    "avx512_fp16": "avx512f",
-    "avx512_vp2intersect": "avx512f",
+    "amx-avx512": "amx-tile",
+    "amx-bf16": "amx-tile",
+    "amx-complex": "amx-tile",
+    "amx-fp16": "amx-tile",
+    "amx-fp8": "amx-tile",
+    "amx-int8": "amx-tile",
+    "amx-movrs": "amx-tile",
+    "amx-tf32": "amx-tile",
+    "avx10.2": "avx10.1",
+    "avx512bf16": "avx512f",
     "avx512bitalg": "avx512f",
+    "avx512fp16": "avx512f",
     "avx512ifma": "avx512f",
     "avx512vbmi": "avx512f",
     "avx512vbmi2": "avx512f",
     "avx512vnni": "avx512f",
+    "avx512vp2intersect": "avx512f",
     "avx512vpopcntdq": "avx512f",
-    "amx_bf16": "amx_tile",
-    "amx_complex": "amx_tile",
-    "amx_fp16": "amx_tile",
-    "amx_int8": "amx_tile",
-    "amx_avx512": "amx_tile",
-    "amx_tf32": "amx_tile",
+    "vaes": "aes",
+    "vpclmulqdq": "pclmul",
+    "widekl": "kl",
     "xsavec": "xsave",
     "xsaveopt": "xsave",
     "xsaves": "xsave",
-    "vaes": "aes",
-    "vpclmulqdq": "pclmulqdq",
-    "widekl": "kl",
-    "avx10_2": "avx10_1",
 }
 
 def _features_up_to(level):

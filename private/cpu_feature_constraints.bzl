@@ -20,10 +20,10 @@ def _find_prebuilt_detector():
     return None
 
 def _detect_x86_64_features(rctx):
-    """Returns the host CPU's constraint value names in //cpu/x86_64/feature."""
+    """Returns the detector report, or None on unsupported hosts."""
     detector = _find_prebuilt_detector()
     if not detector:
-        return []
+        return None
 
     rctx.watch(detector)
     result = rctx.execute([rctx.path(detector)])
@@ -39,31 +39,24 @@ def _detect_x86_64_features(rctx):
             stderr = result.stderr,
         ))
 
-    # Each line is a cpu_features name prefixed with "+" (available) or "-" (unavailable).
-    reported_features = {}
-    for line in result.stdout.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if line[0] not in ["+", "-"]:
-            fail("The CPU feature detector emitted an unexpected line: " + line)
-        if line[1:] in reported_features:
-            fail("The CPU feature detector reported a feature twice: " + line[1:])
-        reported_features[line[1:]] = line[0] == "+"
-
-    return x86_64_feature_constraint_names(reported_features)
+    if not result.stdout.lstrip().startswith("{"):
+        fail("Unsupported CPU detector output; update PREBUILT_DETECTORS to the LLVM detector release")
+    return json.decode(result.stdout)
 
 def _cpu_feature_constraints_impl(rctx):
-    feature_names = []
+    report = None
     if Label("@platforms//cpu:x86_64") in _HOST_CONSTRAINTS:
-        feature_names = _detect_x86_64_features(rctx)
+        report = _detect_x86_64_features(rctx)
+    feature_names = x86_64_feature_constraint_names(report) if report != None else []
 
     constraints = [Label("//cpu/x86_64/feature:" + name) for name in feature_names]
 
-    rctx.file("BUILD.bazel", 'exports_files(["constraints.bzl"])\n')
+    rctx.file("BUILD.bazel", 'exports_files(["constraints.bzl", "detector.json"])\n')
     rctx.file("constraints.bzl", "CPU_FEATURE_CONSTRAINTS = {}\n".format(
         "[\n" + "".join(['    "{}",\n'.format(constraint) for constraint in constraints]) + "]" if constraints else "[]",
     ))
+
+    rctx.file("detector.json", json.encode_indent(report) + "\n")
 
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(
