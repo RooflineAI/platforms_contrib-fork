@@ -118,7 +118,11 @@ X86_64_LLVM_FEATURES = sorted([
 
 # Feature prerequisites used by constraint_setting.refines_constraint_value.
 # Unlisted features refine @platforms//cpu:x86_64.
+#
+# Each prerequisite is implied, possibly transitively, by the feature in the LLVM version the
+# detector is built with; the links point to these implications and need updating with LLVM.
 X86_64_FEATURE_REFINEMENTS = {
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L639-L646
     "amx-avx512": "amx-tile",
     "amx-bf16": "amx-tile",
     "amx-complex": "amx-tile",
@@ -126,7 +130,10 @@ X86_64_FEATURE_REFINEMENTS = {
     "amx-fp8": "amx-tile",
     "amx-int8": "amx-tile",
     "amx-movrs": "amx-tile",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L671
     "avx10.2": "avx10.1",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L612-L625
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L657
     "avx512bf16": "avx512f",
     "avx512bitalg": "avx512f",
     "avx512bmm": "avx512bw",
@@ -137,9 +144,12 @@ X86_64_FEATURE_REFINEMENTS = {
     "avx512vnni": "avx512f",
     "avx512vp2intersect": "avx512f",
     "avx512vpopcntdq": "avx512f",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L606-L607
     "vaes": "aes",
     "vpclmulqdq": "pclmul",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L660
     "widekl": "kl",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L582-L584
     "xsavec": "xsave",
     "xsaveopt": "xsave",
     "xsaves": "xsave",
