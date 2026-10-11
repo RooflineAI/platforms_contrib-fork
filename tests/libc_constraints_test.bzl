@@ -1,7 +1,7 @@
 load("@rules_testing//lib:test_suite.bzl", "test_suite")
 load("//os/linux/libc/glibc:glibc_private.bzl", "GLIBC_VERSIONS")
 load("//os/linux/libc/musl:musl_private.bzl", "MUSL_VERSIONS")
-load(":libc_constraints.bzl", "parsing_for_tests")
+load("//private:libc_constraints.bzl", "parsing_for_tests")
 
 visibility("private")
 

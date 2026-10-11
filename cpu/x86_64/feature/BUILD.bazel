@@ -3,36 +3,27 @@
 # For each feature, this package defines:
 #
 #   * a `<feature>_setting` constraint setting,
-#   * a `<feature>` constraint value indicating the feature is available, and
-#   * a `no_<feature>` constraint value (the default) indicating it is not.
+#   * `<feature>_available` and `<feature>_unavailable` constraint values for `platform`s and
+#     `exec_compatible_with` / `target_compatible_with`, and
+#   * `<feature>` and `no_<feature>` config settings to use as `select()` keys, e.g.
+#     `@platforms_contrib//cpu/x86_64/feature:avx`.
 #
-# Reference these values directly, e.g. `@platforms_contrib//cpu/x86_64/feature:avx`.
+# Baseline features default to available; all others default to unavailable.
 
 load(
     "//cpu/x86_64:x86_64_private.bzl",
+    "X86_64_EXTRA_FEATURES",
     "X86_64_FEATURES",
-    "X86_64_FEATURES_WITHOUT_LEVEL",
     "X86_64_FEATURE_REFINEMENTS",
+    "X86_64_LLVM_FEATURES",
 )
 load(":feature.bzl", "x86_64_feature")
 
-# The v1 baseline features are available on every x86-64 platform, so their constraint settings
-# default to the available value. All higher-level features default to unavailable.
 [
     x86_64_feature(
-        feature,
-        available_by_default = level == "v1",
-    )
-    for level, features in X86_64_FEATURES.items()
-    for feature in features
-]
-
-# Features that are not part of any microarchitecture level are optional and thus default to
-# unavailable. Features that extend another feature refine its constraint value.
-[
-    x86_64_feature(
-        feature,
+        name = feature,
+        available_by_default = feature in X86_64_FEATURES["v1"],
         refines = X86_64_FEATURE_REFINEMENTS.get(feature),
     )
-    for feature in X86_64_FEATURES_WITHOUT_LEVEL
+    for feature in X86_64_LLVM_FEATURES + X86_64_EXTRA_FEATURES
 ]

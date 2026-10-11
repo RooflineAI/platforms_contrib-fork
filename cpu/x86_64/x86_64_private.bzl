@@ -1,78 +1,75 @@
-visibility(["//cpu/x86_64/..."])
+visibility(["//cpu/x86_64/...", "//private", "//tests"])
 
+# Baseline features default to enabled; explicit negatives support freestanding code.
 X86_64_FEATURES = {
-    "v1": ["cmov", "cx8", "fpu", "fxsr", "mmx", "osfxsr", "sce", "sse", "sse2"],
-    "v2": ["cx16", "lahf_sahf", "popcnt", "sse3", "sse4_1", "sse4_2", "ssse3"],
-    "v3": ["avx", "avx2", "bmi1", "bmi2", "f16c", "fma3", "lzcnt", "movbe", "osxsave"],
+    "v1": ["fxsr", "mmx", "sse", "sse2", "x87"],
+    "v2": ["crc32", "cx16", "popcnt", "sahf", "sse3", "sse4.1", "sse4.2", "ssse3"],
+    "v3": ["avx", "avx2", "bmi", "bmi2", "f16c", "fma", "lzcnt", "movbe", "xsave"],
     "v4": ["avx512bw", "avx512cd", "avx512dq", "avx512f", "avx512vl"],
 }
 
 X86_64_LEVELS = X86_64_FEATURES.keys()
 
-# Additional CPU features that are not part of any x86-64 microarchitecture level (v1-v4). These
-# describe optional hardware capabilities such as AES-NI, carry-less multiplication, or AVX-512
-# extensions beyond the v4 baseline.
-#
-# The list tracks CPUID hardware capabilities, first and foremost those reported by the
-# cpu_features library (https://github.com/google/cpu_features), whose names are also used for
-# the constraint values so that features detected on the host (see //host) map to constraint
-# values directly. Capabilities not (yet) covered by cpu_features use their common lowercase name
-# with `.` and `-` replaced by `_` (e.g. `amx_bf16`, `avx10_1`).
+# LLVM feature names, excluding the levels above and deprecated compatibility flags.
 X86_64_FEATURES_WITHOUT_LEVEL = [
     "adx",
     "aes",
-    "amx_avx512",
-    "amx_bf16",
-    "amx_complex",
-    "amx_fp16",
-    "amx_int8",
-    "amx_tf32",
-    "amx_tile",
-    "apxf",
-    "avx10_1",
-    "avx10_2",
-    "avx512_bf16",
-    "avx512_fp16",
-    "avx512_vp2intersect",
+    "amx-avx512",
+    "amx-bf16",
+    "amx-complex",
+    "amx-fp16",
+    "amx-fp8",
+    "amx-int8",
+    "amx-movrs",
+    "amx-tile",
+    "avx10.1",
+    "avx10.2",
+    "avx512bf16",
     "avx512bitalg",
+    "avx512bmm",
+    "avx512fp16",
     "avx512ifma",
     "avx512vbmi",
     "avx512vbmi2",
     "avx512vnni",
+    "avx512vp2intersect",
     "avx512vpopcntdq",
-    "avx_vnni",
     "avxifma",
     "avxneconvert",
+    "avxvnni",
     "avxvnniint16",
     "avxvnniint8",
+    "ccmp",
+    "cf",
     "cldemote",
     "clflushopt",
     "clwb",
     "clzero",
     "cmpccxadd",
+    "egpr",
     "enqcmd",
-    "erms",
     "fma4",
-    "fs_rep_cmpsb_scasb",
-    "fs_rep_mov",
-    "fs_rep_stosb",
     "fsgsbase",
-    "fz_rep_movsb",
     "gfni",
     "hreset",
     "invpcid",
+    "jmpabs",
     "kl",
     "lwp",
     "movdir64b",
     "movdiri",
     "movrs",
     "mwaitx",
-    "pclmulqdq",
+    "ndd",
+    "nf",
+    "pclmul",
     "pconfig",
     "pku",
+    "ppx",
     "prefetchi",
     "prfchw",
     "ptwrite",
+    "push2pop2",
     "raoint",
     "rdpid",
     "rdpru",
@@ -97,47 +94,65 @@ X86_64_FEATURES_WITHOUT_LEVEL = [
     "wbnoinvd",
     "widekl",
     "xop",
-    "xsave",
     "xsavec",
     "xsaveopt",
     "xsaves",
+    "zu",
 ]
 
-# Maps a feature to another feature that it extends. The feature's constraint setting refines the
-# parent feature's `available` constraint value, expressing that the feature can only be present on a
-# platform that also has the parent. For example, the AVX-512 extensions require AVX-512 Foundation
-# (avx512f), and the wider/vectorized variants of AES and carry-less multiplication build on their
-# scalar counterparts. Features not listed here refine `@platforms//cpu:x86_64` and are otherwise
-# independent.
+# Additional CPUID capabilities useful for BUILD selections.
+X86_64_EXTRA_FEATURES = [
+    "ermsb",
+    "fsrc",
+    "fsrm",
+    "fsrs",
+    "fzrm",
+    "rdtscp",
+]
+
+X86_64_LLVM_FEATURES = sorted([
+    feature
+    for features in X86_64_FEATURES.values()
+    for feature in features
+] + X86_64_FEATURES_WITHOUT_LEVEL)
+
+# Feature prerequisites used by constraint_setting.refines_constraint_value.
+# Unlisted features refine @platforms//cpu:x86_64.
+#
+# Each prerequisite is implied, possibly transitively, by the feature in the LLVM version the
+# detector is built with; the links point to these implications and need updating with LLVM.
 X86_64_FEATURE_REFINEMENTS = {
-    # AVX-512 extensions beyond the v4 baseline all build on AVX-512 Foundation.
-    "avx512_bf16": "avx512f",
-    "avx512_fp16": "avx512f",
-    "avx512_vp2intersect": "avx512f",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L639-L646
+    "amx-avx512": "amx-tile",
+    "amx-bf16": "amx-tile",
+    "amx-complex": "amx-tile",
+    "amx-fp16": "amx-tile",
+    "amx-fp8": "amx-tile",
+    "amx-int8": "amx-tile",
+    "amx-movrs": "amx-tile",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L671
+    "avx10.2": "avx10.1",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L612-L625
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L657
+    "avx512bf16": "avx512f",
     "avx512bitalg": "avx512f",
+    "avx512bmm": "avx512bw",
+    "avx512fp16": "avx512f",
     "avx512ifma": "avx512f",
     "avx512vbmi": "avx512f",
     "avx512vbmi2": "avx512f",
     "avx512vnni": "avx512f",
+    "avx512vp2intersect": "avx512f",
     "avx512vpopcntdq": "avx512f",
-    # AMX extensions build on the AMX tile architecture.
-    "amx_bf16": "amx_tile",
-    "amx_complex": "amx_tile",
-    "amx_fp16": "amx_tile",
-    "amx_int8": "amx_tile",
-    "amx_avx512": "amx_tile",
-    "amx_tf32": "amx_tile",
-    # The extended xsave instructions build on the base xsave feature.
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L606-L607
+    "vaes": "aes",
+    "vpclmulqdq": "pclmul",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L660
+    "widekl": "kl",
+    # https://github.com/llvm/llvm-project/blob/llvmorg-23.1.2/llvm/lib/TargetParser/X86TargetParser.cpp#L582-L584
     "xsavec": "xsave",
     "xsaveopt": "xsave",
     "xsaves": "xsave",
-    # Vectorized variants build on their scalar counterparts.
-    "vaes": "aes",
-    "vpclmulqdq": "pclmulqdq",
-    # Key Locker wide instructions build on Key Locker.
-    "widekl": "kl",
-    # The AVX10 versions form a chain.
-    "avx10_2": "avx10_1",
 }
 
 def _features_up_to(level):
@@ -148,5 +163,5 @@ def _features_up_to(level):
             break
     return features
 
-# The features included in each microarchitecture level, including all lower levels.
+# Each level includes the features of all lower levels.
 FEATURES_UP_TO = {level: _features_up_to(level) for level in X86_64_LEVELS}

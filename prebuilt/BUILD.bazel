@@ -1,0 +1,57 @@
+# Cross-compiles the CPU detector with @llvm. The prebuilts workflow releases
+# :for_all_platforms; //private:prebuilts.bzl lists the released binaries.
+
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load(":cfg_variants.bzl", "linux_x86_64_filegroup", "macos_x86_64_filegroup", "windows_x86_64_filegroup")
+
+cc_library(
+    name = "cpu_features",
+    srcs = ["cpu_features.cc"],
+    hdrs = ["cpu_features.h"],
+    visibility = ["//tests:__pkg__"],
+    deps = ["@llvm-project//llvm:TargetParser"],
+)
+
+cc_binary(
+    name = "detect_cpu",
+    srcs = ["detect_cpu_x86_64.cc"],
+    # Shrinks the released binaries. ld64 has no equivalent of --strip-all.
+    linkopts = select({
+        "@platforms//os:macos": ["-Wl,-x"],
+        "@platforms//os:windows": [
+            "-Wl,--strip-all",
+            # TODO: Remove once the llvm module includes
+            # https://github.com/hermeticbuild/hermetic-llvm/pull/829.
+            "-Wl,--gc-sections",
+        ],
+        "//conditions:default": ["-Wl,--strip-all"],
+    }),
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":cpu_features",
+        "@llvm-project//llvm:Support",
+        "@llvm-project//llvm:TargetParser",
+    ],
+)
+
+[
+    platform_filegroup(
+        name = "for_" + name,
+        srcs = [":detect_cpu"],
+    )
+    for name, platform_filegroup in {
+        "linux_x86_64": linux_x86_64_filegroup,
+        "macos_x86_64": macos_x86_64_filegroup,
+        "windows_x86_64": windows_x86_64_filegroup,
+    }.items()
+]
+
+filegroup(
+    name = "for_all_platforms",
+    srcs = [
+        "for_linux_x86_64",
+        "for_macos_x86_64",
+        "for_windows_x86_64",
+    ],
+)

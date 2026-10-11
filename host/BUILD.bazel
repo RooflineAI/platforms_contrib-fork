@@ -1,8 +1,27 @@
 load("@libc_constraints//:constraints.bzl", "LIBC_CONSTRAINTS")
+load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 
+# Host platforms with constraints detected at repository fetch time.
+# Select explicitly with --host_platform, --platforms or --extra_execution_platforms.
+#
+# TODO: Use the parent chain @platforms//host -> :generic -> //host/private:native once all
+# supported Bazel versions honor inherited constraints in toolchain resolution:
+# https://github.com/bazelbuild/bazel/issues/31388.
+#
+# :generic adds system libraries (currently Linux libc and version) to the host's OS and CPU.
 platform(
-    name = "host",
-    constraint_values = LIBC_CONSTRAINTS,
-    parents = ["@platforms//host"],
+    name = "generic",
+    constraint_values = HOST_CONSTRAINTS + LIBC_CONSTRAINTS,
+    visibility = ["//visibility:public"],
+)
+
+# :native adds the host's detected CPU features. Toolchains may emit code requiring them.
+#
+# The alias keeps CPU detection lazy when only :generic is used.
+alias(
+    name = "native",
+    actual = "//host/private:native",
+    # Default package metadata creates a toolchain resolution cycle on Bazel 7.
+    applicable_licenses = [],
     visibility = ["//visibility:public"],
 )
