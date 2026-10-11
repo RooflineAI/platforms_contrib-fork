@@ -32,9 +32,8 @@ def _feature_map_error(features, expected, kind):
 def _report_error(report):
     if type(report) != "dict":
         return "The CPU feature detector must report a JSON object"
-    for field in ["cpu", "llvm_version"]:
-        if type(report.get(field)) != "string" or not report[field]:
-            return "The CPU feature detector must report a nonempty " + field
+    if type(report.get("cpu")) != "string" or not report["cpu"]:
+        return "The CPU feature detector must report a nonempty cpu"
     for field, expected in [("features", _X86_64_REPORTED_FEATURES), ("extras", X86_64_EXTRA_FEATURES)]:
         error = _feature_map_error(report.get(field), expected, field)
         if error:

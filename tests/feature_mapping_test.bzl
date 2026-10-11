@@ -6,7 +6,6 @@ visibility("private")
 
 def _report():
     return {
-        "llvm_version": "23.1.2",
         "cpu": "generic",
         "features": {name: False for name in X86_64_LLVM_FEATURES + ["cmov", "64bit", "cx8"]},
         "extras": {name: False for name in X86_64_EXTRA_FEATURES},

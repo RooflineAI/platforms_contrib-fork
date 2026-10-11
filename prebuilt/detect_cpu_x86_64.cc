@@ -1,6 +1,5 @@
 #include "cpu_features.h"
 
-#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/JSON.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/TargetParser/Host.h"
@@ -29,7 +28,6 @@ int main() {
   }
   llvm::outs()
       << llvm::json::Value(llvm::json::Object{
-             {"llvm_version", LLVM_VERSION_STRING},
              {"cpu", llvm::sys::getHostCPUName()},
              {"features", toJson(platforms_contrib::resolveFeatures(host))},
              {"extras", toJson(platforms_contrib::extraFeatures(cpuid))},

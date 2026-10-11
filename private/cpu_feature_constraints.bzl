@@ -45,14 +45,12 @@ def _cpu_feature_constraints_impl(rctx):
     report = _detect_x86_64_features(rctx)
     feature_names = x86_64_feature_constraint_names(report) if report != None else []
 
-    constraints = [str(Label("//cpu/x86_64/feature:" + name)) for name in feature_names]
-
-    rctx.file("BUILD.bazel", 'exports_files(["constraints.bzl", "detector.json"])\n')
-    rctx.file("constraints.bzl", "CPU_FEATURE_CONSTRAINTS = {}\n".format(
-        json.encode_indent(constraints, indent = "    "),
-    ))
-
-    rctx.file("detector.json", json.encode_indent(report) + "\n")
+    rctx.file("BUILD.bazel", 'exports_files(["constraints.bzl"])\n')
+    rctx.file("constraints.bzl", "CPU_FEATURE_CONSTRAINTS = [\n{}]\n".format("".join([
+        # repr() of a main repository Label omits the leading @@.
+        "    Label({}),\n".format(repr(str(Label("//cpu/x86_64/feature:" + name))))
+        for name in feature_names
+    ])))
 
     if hasattr(rctx, "repo_metadata"):
         return rctx.repo_metadata(
@@ -63,7 +61,4 @@ def _cpu_feature_constraints_impl(rctx):
 cpu_feature_constraints = repository_rule(
     implementation = _cpu_feature_constraints_impl,
     configure = True,
-    # CPU features can change without file changes (e.g. after a microcode update).
-    # Detect them on every server startup.
-    local = True,
 )
