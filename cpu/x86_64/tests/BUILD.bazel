@@ -1,3 +1,0 @@
-load(":feature_test.bzl", "feature_test_suite")
-
-feature_test_suite(name = "feature")

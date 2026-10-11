@@ -1,6 +1,0 @@
-load(":feature_mapping_test.bzl", "feature_mapping_test_suite")
-load(":libc_constraints_test.bzl", "libc_constraints_test_suite")
-
-feature_mapping_test_suite(name = "feature_mapping_tests")
-
-libc_constraints_test_suite(name = "libc_constraints_tests")

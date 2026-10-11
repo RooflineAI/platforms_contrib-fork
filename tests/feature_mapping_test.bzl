@@ -1,6 +1,6 @@
 load("@rules_testing//lib:test_suite.bzl", "test_suite")
 load("//cpu/x86_64:x86_64_private.bzl", "X86_64_EXTRA_FEATURES", "X86_64_LLVM_FEATURES")
-load(":feature_mapping.bzl", "validation_for_tests", "x86_64_feature_constraint_names")
+load("//private:feature_mapping.bzl", "validation_for_tests", "x86_64_feature_constraint_names")
 
 visibility("private")
 

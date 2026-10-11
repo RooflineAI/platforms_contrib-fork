@@ -2,7 +2,7 @@ load("@platforms//host:constraints.bzl", "HOST_CONSTRAINTS")
 load("//os/linux/libc/glibc:glibc_private.bzl", "GLIBC_VERSIONS")
 load("//os/linux/libc/musl:musl_private.bzl", "MUSL_VERSIONS")
 
-visibility("private")
+visibility(["//private", "//tests"])
 
 # These Label calls rely on platforms_contrib using the "platforms" repo name for the "platforms"
 # module as HOST_CONSTRAINTS consists of raw label strings.

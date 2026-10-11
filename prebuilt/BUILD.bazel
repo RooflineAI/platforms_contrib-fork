@@ -3,14 +3,13 @@
 
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load("//cpu/x86_64:x86_64_private.bzl", "X86_64_LLVM_FEATURES")
 load(":cfg_variants.bzl", "linux_x86_64_filegroup", "macos_x86_64_filegroup", "windows_x86_64_filegroup")
 
 cc_library(
     name = "cpu_features",
     srcs = ["cpu_features.cc"],
     hdrs = ["cpu_features.h"],
+    visibility = ["//tests:__pkg__"],
     deps = ["@llvm-project//llvm:TargetParser"],
 )
 
@@ -31,18 +30,6 @@ cc_binary(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":cpu_features",
-        "@llvm-project//llvm:Support",
-        "@llvm-project//llvm:TargetParser",
-    ],
-)
-
-cc_test(
-    name = "cpu_features_test",
-    srcs = ["cpu_features_test.cc"],
-    args = X86_64_LLVM_FEATURES,
-    deps = [
-        ":cpu_features",
-        "@llvm-project//clang:basic",
         "@llvm-project//llvm:Support",
         "@llvm-project//llvm:TargetParser",
     ],

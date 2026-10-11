@@ -1,4 +1,4 @@
-visibility(["//os/linux/libc/musl", "//private"])
+visibility(["//os/linux/libc/musl", "//private", "//tests"])
 
 MUSL_VERSIONS = [
     "1." + str(i)

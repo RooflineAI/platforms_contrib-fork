@@ -1,4 +1,4 @@
-visibility(["//os/linux/libc/glibc", "//private"])
+visibility(["//os/linux/libc/glibc", "//private", "//tests"])
 
 GLIBC_VERSIONS = [
     "2." + str(i)

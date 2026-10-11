@@ -7,7 +7,7 @@ load(
     "X86_64_LLVM_FEATURES",
 )
 
-visibility("private")
+visibility(["//private", "//tests"])
 
 # Fixed x86-64 capabilities without useful driver-level disable controls.
 _X86_64_FIXED_FEATURES = ["64bit", "cmov", "cx8"]

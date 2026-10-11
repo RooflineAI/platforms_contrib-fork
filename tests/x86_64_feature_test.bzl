@@ -59,7 +59,7 @@ def _feature_state(feature):
         "//conditions:default": "unmatched",
     })
 
-def feature_test_suite(name):
+def x86_64_feature_test_suite(name):
     native.platform(name = name + "_baseline", constraint_values = ["@platforms//cpu:x86_64"])
     native.platform(name = name + "_arm", constraint_values = ["@platforms//cpu:aarch64"])
     native.platform(
@@ -93,5 +93,5 @@ def feature_test_suite(name):
             name = name + "_" + platform + "_test",
             target = ":" + name + "_selections",
             impl = impl,
-            config_settings = {"//command_line_option:platforms": str(Label("//cpu/x86_64/tests:" + name + "_" + platform))},
+            config_settings = {"//command_line_option:platforms": str(Label("//tests:" + name + "_" + platform))},
         )

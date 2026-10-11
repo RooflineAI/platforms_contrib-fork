@@ -24,7 +24,7 @@ jobs:
         run: echo "9.3.0" > .bazelversion
 
       - name: Test feature detection and constraints
-        run: bazel test -c opt //prebuilt:cpu_features_test //private/... //cpu/x86_64/tests/...
+        run: bazel test -c opt //tests/...
 
       - name: Build detectors for all platforms
         run: bazel build -c opt //prebuilt:for_all_platforms

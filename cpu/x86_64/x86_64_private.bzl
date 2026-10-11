@@ -1,4 +1,4 @@
-visibility(["//cpu/x86_64/...", "//private", "//prebuilt"])
+visibility(["//cpu/x86_64/...", "//private", "//tests"])
 
 # Baseline features default to enabled; explicit negatives support freestanding code.
 X86_64_FEATURES = {
