@@ -45,13 +45,13 @@ def _report_error(report):
     return None
 
 def x86_64_feature_constraint_names(report):
-    """Returns a positive or negative constraint name for every declared feature."""
+    """Returns the available or unavailable constraint name for every declared feature."""
     error = _report_error(report)
     if error:
         fail(error)
     features = report["features"] | report["extras"]
     return sorted([
-        name if features[name] else "no_" + name
+        name + ("_available" if features[name] else "_unavailable")
         for name in X86_64_LLVM_FEATURES + X86_64_EXTRA_FEATURES
     ])
 

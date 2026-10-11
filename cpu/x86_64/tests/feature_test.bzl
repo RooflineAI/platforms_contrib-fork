@@ -28,21 +28,21 @@ def _baseline_test(env, target):
     values = target[_Selections]
     env.expect.that_bool(values.baseline).equals(True)
     env.expect.that_bool(values.v4).equals(False)
-    env.expect.that_str(values.sse).equals("enabled")
-    env.expect.that_str(values.avx).equals("disabled")
-    env.expect.that_str(values.amx_bf16).equals("disabled")
+    env.expect.that_str(values.sse).equals("available")
+    env.expect.that_str(values.avx).equals("unavailable")
+    env.expect.that_str(values.amx_bf16).equals("unavailable")
 
 def _kernel_test(env, target):
     values = target[_Selections]
     env.expect.that_bool(values.baseline).equals(False)
-    env.expect.that_str(values.sse).equals("disabled")
+    env.expect.that_str(values.sse).equals("unavailable")
 
 def _v4_test(env, target):
     values = target[_Selections]
     env.expect.that_bool(values.baseline).equals(True)
     env.expect.that_bool(values.v4).equals(True)
-    env.expect.that_str(values.sse).equals("enabled")
-    env.expect.that_str(values.avx).equals("enabled")
+    env.expect.that_str(values.sse).equals("available")
+    env.expect.that_str(values.avx).equals("available")
 
 def _arm_test(env, target):
     values = target[_Selections]
@@ -54,8 +54,8 @@ def _arm_test(env, target):
 
 def _feature_state(feature):
     return select({
-        "//cpu/x86_64/feature:" + feature + "_enabled": "enabled",
-        "//cpu/x86_64/feature:" + feature + "_disabled": "disabled",
+        "//cpu/x86_64/feature:" + feature: "available",
+        "//cpu/x86_64/feature:no_" + feature: "unavailable",
         "//conditions:default": "unmatched",
     })
 
@@ -65,14 +65,14 @@ def feature_test_suite(name):
     native.platform(
         name = name + "_explicit_negatives",
         constraint_values = ["@platforms//cpu:x86_64"] + [
-            "//cpu/x86_64/feature:" + (feature if feature in X86_64_FEATURES["v1"] else "no_" + feature)
+            "//cpu/x86_64/feature:" + feature + ("_available" if feature in X86_64_FEATURES["v1"] else "_unavailable")
             for feature in X86_64_LLVM_FEATURES
         ],
     )
     native.platform(
         name = name + "_kernel",
         constraint_values = ["@platforms//cpu:x86_64"] + [
-            "//cpu/x86_64/feature:no_" + feature
+            "//cpu/x86_64/feature:" + feature + "_unavailable"
             for feature in ["x87", "mmx", "sse", "sse2"]
         ],
     )

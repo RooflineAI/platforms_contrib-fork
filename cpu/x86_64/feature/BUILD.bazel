@@ -3,14 +3,15 @@
 # For each feature, this package defines:
 #
 #   * a `<feature>_setting` constraint setting,
-#   * a `<feature>` constraint value indicating the feature is available, and
-#   * a `no_<feature>` constraint value indicating it is not.
+#   * `<feature>_available` and `<feature>_unavailable` constraint values for `platform`s and
+#     `exec_compatible_with` / `target_compatible_with`, and
+#   * `<feature>` and `no_<feature>` config settings to use as `select()` keys, e.g.
+#     `@platforms_contrib//cpu/x86_64/feature:avx`.
 #
-# Baseline features default to enabled; all others default to disabled.
+# Baseline features default to available; all others default to unavailable. These defaults
+# apply on every CPU, which is why the config settings also require @platforms//cpu:x86_64.
 #
-# Reference these values directly, e.g. `@platforms_contrib//cpu/x86_64/feature:avx`.
-# Use `<feature>_enabled` and `<feature>_disabled` as select() keys.
-# The ermsb, fsrm, fzrm, fsrs, fsrc, and rdtscp selectors report CPUID bits;
+# The ermsb, fsrm, fzrm, fsrs, fsrc, and rdtscp features report CPUID bits;
 # the remaining features follow LLVM's host detection, including OS-state checks.
 
 load(

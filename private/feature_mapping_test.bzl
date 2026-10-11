@@ -20,10 +20,13 @@ def _explicit_negatives_test(env):
     report["extras"]["rdtscp"] = True
     names = x86_64_feature_constraint_names(report)
     env.expect.that_int(len(names)).equals(len(X86_64_LLVM_FEATURES) + len(X86_64_EXTRA_FEATURES))
-    for name in ["x87", "avx512bf16", "rdtscp", "no_sse", "no_crc32", "no_push2pop2", "no_ppx", "no_ermsb"]:
-        env.expect.that_bool(name in names).equals(True)
-    for name in ["cmov", "64bit", "cx8", "no_cmov", "no_64bit", "no_cx8"]:
-        env.expect.that_bool(name in names).equals(False)
+    for name in ["x87", "avx512bf16", "rdtscp"]:
+        env.expect.that_bool(name + "_available" in names).equals(True)
+    for name in ["sse", "crc32", "push2pop2", "ppx", "ermsb"]:
+        env.expect.that_bool(name + "_unavailable" in names).equals(True)
+    for name in ["cmov", "64bit", "cx8"]:
+        env.expect.that_bool(name + "_available" in names).equals(False)
+        env.expect.that_bool(name + "_unavailable" in names).equals(False)
 
 def _missing_feature_test(env):
     report = _report()
