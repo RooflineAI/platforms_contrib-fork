@@ -10,8 +10,9 @@
 #   * Usage in `select()`: use one of the `:at_least_vN` or `//cpu/x86_64/feature:<feature>` config
 #     settings as a key.
 #
-#   * Constraining a toolchain: list a single `//cpu/x86_64/feature:<feature>_available` value in
-#     `exec_compatible_with` / `target_compatible_with`.
+#   * Constraining a toolchain: list the `//cpu/x86_64/feature:<feature>_available` values it
+#     requires, or `x86_64_level_constraints("vN")`, in `exec_compatible_with` /
+#     `target_compatible_with`.
 #
 # See `examples/x86_64/BUILD.bazel` for examples of these usage patterns.
 

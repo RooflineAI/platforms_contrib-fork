@@ -6,7 +6,7 @@ def x86_64_feature(name, available_by_default = False, refines = None):
     """Defines feature constraints and the config settings to select() on them.
 
     Args:
-        name: LLVM feature name, or a supplemental CPUID capability.
+        name: Name of the CPU feature.
         available_by_default: Whether an unspecified feature is available.
         refines: Prerequisite feature; defaults to the x86-64 CPU constraint.
     """

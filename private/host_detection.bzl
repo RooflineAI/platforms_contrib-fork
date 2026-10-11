@@ -19,7 +19,6 @@ def _host_detection_impl(mctx):
         name = "cpu_feature_constraints",
     )
 
-    # Repos are fetched lazily; cpu_feature_constraints downloads only the host's detector.
     for (os, cpu), prebuilt in PREBUILT_DETECTORS.items():
         http_file(
             name = prebuilt_detector_repo_name(os, cpu),

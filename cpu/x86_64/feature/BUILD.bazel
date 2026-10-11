@@ -8,11 +8,7 @@
 #   * `<feature>` and `no_<feature>` config settings to use as `select()` keys, e.g.
 #     `@platforms_contrib//cpu/x86_64/feature:avx`.
 #
-# Baseline features default to available; all others default to unavailable. These defaults
-# apply on every CPU, which is why the config settings also require @platforms//cpu:x86_64.
-#
-# The ermsb, fsrm, fzrm, fsrs, fsrc, and rdtscp features report CPUID bits;
-# the remaining features follow LLVM's host detection, including OS-state checks.
+# Baseline features default to available; all others default to unavailable.
 
 load(
     "//cpu/x86_64:x86_64_private.bzl",
