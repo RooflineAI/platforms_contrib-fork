@@ -35,13 +35,8 @@ cc_binary(
     ],
 )
 
-# aarch64 host CPU detector: Google cpu_features on Linux (HWCAP, no LLVM) and direct sysctl on macOS
-# (cpu_features' Darwin backend stops at BTI, missing SVE/SME). LLVM-free, so it builds anywhere; the
-# macOS path is verified on Apple Silicon. Cross-compiled and released by the prebuilts workflow
-# (:for_linux_aarch64 / :for_macos_aarch64 below), but inert until an entry is added to
-# //private:prebuilts.bzl's PREBUILT_DETECTORS, so //host:native does not use it. See
-# docs/aarch64/HOST_DETECTION.md. The macOS branch has no deps; Linux uses @cpu_features. (This is
-# unrelated to the x86-only ":cpu_features" cc_library above.)
+# aarch64 host CPU detector, cross-compiled for Linux (cpu_features) and macOS (sysctl, no deps). See
+# the header of detect_cpu_aarch64.cc. Unrelated to the x86-only :cpu_features library above.
 cc_binary(
     name = "detect_cpu_aarch64",
     srcs = [
@@ -50,15 +45,10 @@ cc_binary(
     ],
     linkopts = select({
         "@platforms//os:macos": ["-Wl,-x"],
-        "@platforms//os:windows": [
-            "-Wl,--strip-all",
-            "-Wl,--gc-sections",
-        ],
         "//conditions:default": ["-Wl,--strip-all"],
     }),
     target_compatible_with = ["@platforms//cpu:aarch64"],
     deps = select({
-        # cpu_features' macOS backend omits SVE/SME, so that branch uses sysctl directly (no deps).
         "@platforms//os:macos": [],
         "//conditions:default": ["@cpu_features//:cpuinfo"],
     }),

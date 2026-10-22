@@ -76,7 +76,8 @@ def _aarch64_available_only_test(env):
         env.expect.that_bool(name.endswith("_available")).equals(True)
 
 def _aarch64_empty_cpu_ok_test(env):
-    # The aarch64 detector leaves the model empty; that must validate (x86-64 requires a cpu).
+    # The aarch64 detector reports an empty model for an unknown CPU; that must validate (x86-64
+    # requires a nonempty cpu).
     report = _aarch64_report(["fp", "simd"])
     env.expect.that_bool(validation_for_tests.aarch64_report_error(report) == None).equals(True)
 

@@ -56,9 +56,9 @@ def x86_64_feature_constraint_names(report):
     ])
 
 def _aarch64_report_error(report):
-    # The aarch64 detector reports a SPARSE set: only the -march tokens it positively detected, as
-    # {token: true}. Unlike x86-64 there is no dense feature list to match (so no "missing" check)
-    # and the CPU model may be empty (it is deferred; see prebuilt/detect_cpu_aarch64.cc).
+    # The aarch64 detector reports a sparse set: only the -march tokens it detected, as {token: true}.
+    # Unlike x86-64 there is no dense feature list to match (so no "missing" check), and the CPU
+    # model is "" for a CPU the detector does not know (see prebuilt/detect_cpu_aarch64.cc).
     if type(report) != "dict":
         return "The CPU feature detector must report a JSON object"
     if type(report.get("cpu")) != "string":

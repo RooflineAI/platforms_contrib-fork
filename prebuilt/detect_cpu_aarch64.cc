@@ -1,20 +1,24 @@
 // Host aarch64 CPU feature detector. Prints a JSON report {cpu, features} on stdout, where each
-// feature is a platforms_contrib -march token (as in AARCH64_FEATURES) available on the host. It has
-// no LLVM dependency, so it builds and runs on any aarch64 host in seconds.
+// feature is a platforms_contrib -march token (as in AARCH64_FEATURES) the host has. The report is
+// sparse: only detected features appear, as {token: true}. It has no LLVM dependency.
 //
-//   * Linux: Google cpu_features' GetAarch64Info() reads HWCAP via getauxval. This is the same
-//     kernel-sanitised set LLVM's getHostCPUFeatures() reads (both HWCAP-bounded), without linking
-//     LLVM. Verified on an Armv9 Arm Linux host (Cortex-A720 class); see HOST_DETECTION.md.
+//   * Linux: Google cpu_features' GetAarch64Info() reads HWCAP via getauxval, the same
+//     kernel-sanitised bits LLVM's getHostCPUFeatures() reads. The model is the MIDR
+//     (implementer, part) mapped through prebuilt/aarch64_cpu_models.inc, generated from LLVM's
+//     getHostCPUNameForARM.
 //
-//   * macOS/Apple Silicon: read the hw.optional.arm.FEAT_* sysctls directly. cpu_features is NOT used
-//     here: its Darwin backend stops at BTI (no SVE/SME/wfxt/cssc/mops/...), which would miss SME2 on
-//     Apple Silicon. VERIFIED on an Apple M4 Pro: reports sme/sme2 and no sve. This branch has no
-//     dependencies (sysctl only), so it compiles with a stock clang.
+//   * macOS: the hw.optional.arm.FEAT_* sysctls (macOS 12+; macOS 11 only has the older
+//     hw.optional.armv8_* keys, which are not read). LLVM has no hardware feature read for Darwin
+//     AArch64 and cpu_features' Darwin backend stops at FEAT_BTI, so neither reports SVE or SME. The
+//     model is the "Apple M<N>" brand string mapped to apple-m<N> for the generations LLVM knows.
 //
-// model: the CPU model is reported as an LLVM -mcpu name. On Linux the MIDR (implementer, part) from
-// cpu_features is mapped through the generated table in prebuilt/aarch64_cpu_models.inc (parsed from
-// LLVM's getHostCPUNameForARM); on macOS the "Apple M<N>" brand string maps to apple-m<N> for the
-// generations LLVM knows. An unknown CPU yields an empty model. See docs/aarch64/HOST_DETECTION.md.
+// An unlisted feature is never reported (a platform must not claim a capability that was not
+// positively detected), and an unknown CPU yields an empty model. Other operating systems are not
+// supported.
+//
+// The prebuilts workflow cross-compiles this for linux_aarch64 and macos_aarch64. //host:native uses
+// it once a released binary is listed in //private:prebuilts.bzl's PREBUILT_DETECTORS; add an entry
+// only for a binary that has been run on hardware for that OS.
 
 #include <cstddef>
 #include <cstdio>
@@ -25,9 +29,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <sys/sysctl.h>
-#else
+#elif defined(__linux__)
 #include "cpuinfo_aarch64.h"
 #include "prebuilt/aarch64_cpu_models.inc"
+#else
+#error "unsupported operating system"
 #endif
 
 namespace {
@@ -43,29 +49,45 @@ bool SysctlArmFeature(const char *feature) {
 }
 
 std::vector<const char *> DetectFeatures() {
-  // hw.optional.arm.FEAT_* (macOS 12+) -> -march token. Absent sysctls read as 0 (conservative, a
-  // platform never claims a capability we did not positively detect).
+  // hw.optional.arm.FEAT_* -> -march token. An absent sysctl reads as 0.
   static const struct {
     const char *feature;
     const char *token;
   } kFeatures[] = {
-      {"FEAT_CRC32", "crc"},         {"FEAT_LSE", "lse"},
-      {"FEAT_LSE128", "lse128"},     {"FEAT_RDM", "rdm"},
-      {"FEAT_FP16", "fp16"},         {"FEAT_FHM", "fp16fml"},
-      {"FEAT_DotProd", "dotprod"},   {"FEAT_JSCVT", "jscvt"},
-      {"FEAT_FCMA", "fcma"},         {"FEAT_LRCPC", "rcpc"},
-      {"FEAT_LRCPC3", "rcpc3"},      {"FEAT_FlagM", "flagm"},
-      {"FEAT_SB", "sb"},             {"FEAT_SSBS", "ssbs"},
-      {"FEAT_PAuth", "pauth"},       {"FEAT_DIT", "dit"},
-      {"FEAT_I8MM", "i8mm"},         {"FEAT_BF16", "bf16"},
-      {"FEAT_BTI", "bti"},           {"FEAT_WFxT", "wfxt"},
-      {"FEAT_CSSC", "cssc"},         {"FEAT_MOPS", "mops"},
-      {"FEAT_HBC", "hbc"},           {"FEAT_FAMINMAX", "faminmax"},
-      {"FEAT_LUT", "lut"},           {"FEAT_SVE", "sve"},
-      {"FEAT_SVE2", "sve2"},         {"FEAT_SVE2p1", "sve2p1"},
-      {"FEAT_SME", "sme"},           {"FEAT_SME2", "sme2"},
-      {"FEAT_SME2p1", "sme2p1"},     {"FEAT_SME_F64F64", "sme-f64f64"},
-      {"FEAT_SME_I16I64", "sme-i16i64"}, {"FEAT_SME_B16B16", "sme-b16b16"},
+      {"FEAT_CRC32", "crc"},
+      {"FEAT_LSE", "lse"},
+      {"FEAT_LSE128", "lse128"},
+      {"FEAT_RDM", "rdm"},
+      {"FEAT_FP16", "fp16"},
+      {"FEAT_FHM", "fp16fml"},
+      {"FEAT_DotProd", "dotprod"},
+      {"FEAT_JSCVT", "jscvt"},
+      {"FEAT_FCMA", "fcma"},
+      {"FEAT_LRCPC", "rcpc"},
+      {"FEAT_LRCPC3", "rcpc3"},
+      {"FEAT_FlagM", "flagm"},
+      {"FEAT_SB", "sb"},
+      {"FEAT_SSBS", "ssbs"},
+      {"FEAT_PAuth", "pauth"},
+      {"FEAT_DIT", "dit"},
+      {"FEAT_I8MM", "i8mm"},
+      {"FEAT_BF16", "bf16"},
+      {"FEAT_BTI", "bti"},
+      {"FEAT_WFxT", "wfxt"},
+      {"FEAT_CSSC", "cssc"},
+      {"FEAT_MOPS", "mops"},
+      {"FEAT_HBC", "hbc"},
+      {"FEAT_FAMINMAX", "faminmax"},
+      {"FEAT_LUT", "lut"},
+      {"FEAT_SVE", "sve"},
+      {"FEAT_SVE2", "sve2"},
+      {"FEAT_SVE2p1", "sve2p1"},
+      {"FEAT_SME", "sme"},
+      {"FEAT_SME2", "sme2"},
+      {"FEAT_SME2p1", "sme2p1"},
+      {"FEAT_SME_F64F64", "sme-f64f64"},
+      {"FEAT_SME_I16I64", "sme-i16i64"},
+      {"FEAT_SME_B16B16", "sme-b16b16"},
       {"FEAT_SME_F16F16", "sme-f16f16"},
   };
   std::vector<const char *> tokens;
@@ -108,7 +130,7 @@ std::string DetectModel() {
   return "";
 }
 
-#else
+#elif defined(__linux__)
 
 std::vector<const char *> DetectFeatures() {
   const cpu_features::Aarch64Features f = cpu_features::GetAarch64Info().features;

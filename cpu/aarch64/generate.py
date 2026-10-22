@@ -14,8 +14,6 @@ What is extracted:
     spelling: `TargetFeatureName`, unless a `let ... UserVisibleName = "X" in` line directly
     precedes the `def` of that record, in which case it is `X`. The meta-alias `crypto` is dropped
     because it is a version-dependent bundle.
-  * Every `Architecture64<MAJOR, MINOR, "a", ...>` record, parsed to validate the file; the
-    versions are not emitted yet.
 """
 
 import os
@@ -29,9 +27,6 @@ HOST_PATH = "llvm/lib/TargetParser/Host.cpp"
 
 # Meta-aliases that are not a single feature.
 DROPPED_FEATURES = frozenset(["crypto"])
-
-# Only the A-profile is in scope.
-SUPPORTED_PROFILES = frozenset(["a"])
 
 REGENERATE_COMMAND = "python3 cpu/aarch64/generate.py"
 
@@ -48,7 +43,7 @@ _CASE = re.compile(r'\.Case\("(0x[0-9a-fA-F]+)",\s*"([^"]+)"\)')
 _RECORD = re.compile(
     r"""
     (?:^let[ \t]+(?P<let>[^\n]*?)[ \t]+in[ \t]*\n\s*)?   # optional `let ... in`
-    ^def[ \t]+\w+[ \t]*:[ \t]*(?P<cls>ExtensionWithMArch|Architecture64)
+    ^def[ \t]+\w+[ \t]*:[ \t]*(?P<cls>ExtensionWithMArch)
     <[ \t]*(?P<args>.*?)>                                 # template arguments, up to the closing >
     """,
     re.MULTILINE | re.VERBOSE | re.DOTALL,
@@ -81,17 +76,14 @@ def fetch(path):
 
 
 def resolve_commit():
-    """Returns the commit SHA that LLVM_TAG points to, or "unresolved" on failure."""
-    try:
-        result = subprocess.run(
-            ["gh", "api", "/repos/llvm/llvm-project/commits/{}".format(LLVM_TAG), "--jq", ".sha"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        return result.stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return "unresolved"
+    """Returns the commit SHA that LLVM_TAG points to."""
+    result = subprocess.run(
+        ["gh", "api", "/repos/llvm/llvm-project/commits/{}".format(LLVM_TAG), "--jq", ".sha"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
 
 
 def strip_comments(text):
@@ -99,49 +91,35 @@ def strip_comments(text):
 
 
 def parse(text):
-    """Returns (sorted feature tokens, ordered base versions, {token: gloss}, {token: -mattr name})."""
+    """Returns (sorted feature tokens, {token: gloss}, {token: -mattr name})."""
     features = set()
-    versions = {}
     descriptions = {}
     mattr_overrides = {}
     for match in _RECORD.finditer(strip_comments(text)):
         overrides = dict(_ASSIGNMENT.findall(match.group("let") or ""))
         args = match.group("args")
-        if match.group("cls") == "ExtensionWithMArch":
-            name = re.match(r'"([^"]+)"', args)
-            if not name:
-                raise SystemExit("Cannot parse ExtensionWithMArch arguments: " + args)
-            target_feature_name = name.group(1)
-            if target_feature_name in DROPPED_FEATURES:
-                continue
-            token = overrides.get("UserVisibleName", target_feature_name)
-            if token in features:
-                raise SystemExit("Duplicate -march token: " + token)
-            features.add(token)
-            # The -march token (UserVisibleName) differs from the -mattr/-target-feature name
-            # (TargetFeatureName) for a few extensions, e.g. simd -> neon. Record those.
-            if token != target_feature_name:
-                mattr_overrides[token] = target_feature_name
-            # Positional args are "TargetFeatureName", "Spelling", "ArchitectureFeatureName", "Desc".
-            quoted = re.findall(r'"([^"]*)"', args)
-            desc = normalize_desc(quoted[3]) if len(quoted) >= 4 else ""
-            if desc:
-                descriptions[token] = desc
-        else:
-            parsed = re.match(r'(\d+)\s*,\s*(\d+)\s*,\s*"([a-z])"', args)
-            if not parsed:
-                raise SystemExit("Cannot parse Architecture64 arguments: " + args)
-            major, minor, profile = int(parsed.group(1)), int(parsed.group(2)), parsed.group(3)
-            if profile not in SUPPORTED_PROFILES:
-                continue
-            versions[(major, minor)] = "armv{}{}-{}".format(
-                major,
-                "" if minor == 0 else ".{}".format(minor),
-                profile,
-            )
-    if not features or not versions:
-        raise SystemExit("Parsed no features or versions; has the .td format changed?")
-    return sorted(features), [versions[key] for key in sorted(versions)], descriptions, mattr_overrides
+        name = re.match(r'"([^"]+)"', args)
+        if not name:
+            raise SystemExit("Cannot parse ExtensionWithMArch arguments: " + args)
+        target_feature_name = name.group(1)
+        if target_feature_name in DROPPED_FEATURES:
+            continue
+        token = overrides.get("UserVisibleName", target_feature_name)
+        if token in features:
+            raise SystemExit("Duplicate -march token: " + token)
+        features.add(token)
+        # The -march token (UserVisibleName) differs from the -mattr/-target-feature name
+        # (TargetFeatureName) for a few extensions, e.g. simd -> neon. Record those.
+        if token != target_feature_name:
+            mattr_overrides[token] = target_feature_name
+        # Positional args are "TargetFeatureName", "Spelling", "ArchitectureFeatureName", "Desc".
+        quoted = re.findall(r'"([^"]*)"', args)
+        desc = normalize_desc(quoted[3]) if len(quoted) >= 4 else ""
+        if desc:
+            descriptions[token] = desc
+    if not features:
+        raise SystemExit("Parsed no features; has the .td format changed?")
+    return sorted(features), descriptions, mattr_overrides
 
 
 def parse_cpu_models(host_text):
@@ -212,7 +190,7 @@ def render_mattr_map(overrides):
     return "\n".join(lines)
 
 
-def render(features, versions, commit, descriptions, mattr_overrides):
+def render(features, commit, descriptions, mattr_overrides):
     return "\n".join([
         "# GENERATED FILE, DO NOT EDIT BY HAND.",
         "#",
@@ -250,14 +228,14 @@ def main(argv):
             host_text = f.read()
     else:
         host_text = fetch(HOST_PATH)
-    features, versions, descriptions, mattr_overrides = parse(text)
+    features, descriptions, mattr_overrides = parse(text)
     models = parse_cpu_models(host_text)
     commit = resolve_commit()
     missing = [feature for feature in features if feature not in descriptions]
     if missing:
         print("warning: no description for: " + ", ".join(missing), file=sys.stderr)
     with open(OUTPUT, "w", encoding="utf-8") as f:
-        f.write(render(features, versions, commit, descriptions, mattr_overrides))
+        f.write(render(features, commit, descriptions, mattr_overrides))
     with open(CPU_MODELS_OUTPUT, "w", encoding="utf-8") as f:
         f.write(render_cpu_models(models, commit))
     print(
