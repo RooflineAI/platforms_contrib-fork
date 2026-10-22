@@ -1,7 +1,7 @@
 // GENERATED FILE, DO NOT EDIT BY HAND.
 //
-// Source: llvm/llvm-project llvmorg-23.1.2 (commit 85ac560262434c9ccfc0c183ec22d4138ed647fb), llvm/lib/TargetParser/Host.cpp
-// getHostCPUNameForARMFromComponents(). Regenerate: python3 cpu/aarch64/generate.py
+// Source: llvm-project 23.1.2 (the llvm module in MODULE.bazel), llvm/lib/TargetParser/Host.cpp
+// getHostCPUNameForARMFromComponents(). Regenerate: bazel run //cpu/aarch64:generate
 //
 // (MIDR implementer, part) -> LLVM -mcpu name. Parts are matched numerically (the source
 // spells some with and some without leading zeros). Variant-disambiguated parts (Samsung

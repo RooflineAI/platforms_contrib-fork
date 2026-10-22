@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generates aarch64_features.bzl from LLVM's AArch64Features.td.
+"""Generates aarch64_features.bzl and prebuilt/aarch64_cpu_models.inc from the llvm module's sources.
 
 Usage, from the repository root:
 
-    python3 cpu/aarch64/generate.py [path/to/AArch64Features.td]
+    bazel run //cpu/aarch64:generate
 
-Without an argument, the file is fetched with the authenticated `gh` CLI from the LLVM tag pinned
-below. Only the Python standard library is used.
+The inputs are AArch64Features.td and Host.cpp of the LLVM version pinned by the llvm module in
+MODULE.bazel; to move to a newer LLVM, update that pin. Only the Python standard library is used.
 
 What is extracted:
 
@@ -14,26 +14,22 @@ What is extracted:
     spelling: `TargetFeatureName`, unless a `let ... UserVisibleName = "X" in` line directly
     precedes the `def` of that record, in which case it is `X`. The meta-alias `crypto` is dropped
     because it is a version-dependent bundle.
+  * The MIDR (implementer, part) -> -mcpu name table in getHostCPUNameForARM.
 """
 
 import os
 import re
-import subprocess
 import sys
 
-LLVM_TAG = "llvmorg-23.1.2"
+from python.runfiles import runfiles
+
 TD_PATH = "llvm/lib/Target/AArch64/AArch64Features.td"
 HOST_PATH = "llvm/lib/TargetParser/Host.cpp"
 
 # Meta-aliases that are not a single feature.
 DROPPED_FEATURES = frozenset(["crypto"])
 
-REGENERATE_COMMAND = "python3 cpu/aarch64/generate.py"
-
-_HERE = os.path.dirname(os.path.abspath(__file__))
-OUTPUT = os.path.join(_HERE, "aarch64_features.bzl")
-# The MIDR -> -mcpu table is a C include consumed by prebuilt/detect_cpu_aarch64.cc.
-CPU_MODELS_OUTPUT = os.path.join(os.path.dirname(os.path.dirname(_HERE)), "prebuilt", "aarch64_cpu_models.inc")
+REGENERATE_COMMAND = "bazel run //cpu/aarch64:generate"
 
 # MIDR implementer blocks and the per-part -mcpu names inside them, in getHostCPUNameForARM.
 _IMPLEMENTER = re.compile(r'Implementer == "(0x[0-9a-fA-F]+)"')
@@ -43,12 +39,13 @@ _CASE = re.compile(r'\.Case\("(0x[0-9a-fA-F]+)",\s*"([^"]+)"\)')
 _RECORD = re.compile(
     r"""
     (?:^let[ \t]+(?P<let>[^\n]*?)[ \t]+in[ \t]*\n\s*)?   # optional `let ... in`
-    ^def[ \t]+\w+[ \t]*:[ \t]*(?P<cls>ExtensionWithMArch)
+    ^def[ \t]+\w+[ \t]*:[ \t]*ExtensionWithMArch
     <[ \t]*(?P<args>.*?)>                                 # template arguments, up to the closing >
     """,
     re.MULTILINE | re.VERBOSE | re.DOTALL,
 )
 _ASSIGNMENT = re.compile(r'(\w+)\s*=\s*"([^"]*)"')
+_LLVM_VERSION = re.compile(r'llvm_version\s*=\s*"([^"]+)"')
 
 # Longest one-line gloss kept next to a feature; longer LLVM descriptions are truncated at a word.
 _DESCRIPTION_CAP = 66
@@ -61,29 +58,6 @@ def normalize_desc(text):
     if len(text) > _DESCRIPTION_CAP:
         text = text[:_DESCRIPTION_CAP].rsplit(" ", 1)[0] + "..."
     return text
-
-
-def fetch(path):
-    """Returns a file from llvm-project at the pinned tag using the gh CLI."""
-    url = "/repos/llvm/llvm-project/contents/{}?ref={}".format(path, LLVM_TAG)
-    result = subprocess.run(
-        ["gh", "api", "-H", "Accept: application/vnd.github.raw", url],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout
-
-
-def resolve_commit():
-    """Returns the commit SHA that LLVM_TAG points to."""
-    result = subprocess.run(
-        ["gh", "api", "/repos/llvm/llvm-project/commits/{}".format(LLVM_TAG), "--jq", ".sha"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout.strip()
 
 
 def strip_comments(text):
@@ -150,11 +124,11 @@ def parse_cpu_models(host_text):
     return models
 
 
-def render_cpu_models(models, commit):
+def render_cpu_models(models, version):
     lines = [
         "// GENERATED FILE, DO NOT EDIT BY HAND.",
         "//",
-        "// Source: llvm/llvm-project {} (commit {}), {}".format(LLVM_TAG, commit, HOST_PATH),
+        "// Source: llvm-project {} (the llvm module in MODULE.bazel), {}".format(version, HOST_PATH),
         "// getHostCPUNameForARMFromComponents(). Regenerate: {}".format(REGENERATE_COMMAND),
         "//",
         "// (MIDR implementer, part) -> LLVM -mcpu name. Parts are matched numerically (the source",
@@ -190,14 +164,12 @@ def render_mattr_map(overrides):
     return "\n".join(lines)
 
 
-def render(features, commit, descriptions, mattr_overrides):
+def render(features, version, descriptions, mattr_overrides):
     return "\n".join([
         "# GENERATED FILE, DO NOT EDIT BY HAND.",
         "#",
-        "# Source: llvm/llvm-project {} (commit {}), {}".format(LLVM_TAG, commit, TD_PATH),
+        "# Source: llvm-project {} (the llvm module in MODULE.bazel), {}".format(version, TD_PATH),
         "# Regenerate: {}".format(REGENERATE_COMMAND),
-        "#",
-        "# Update LLVM_TAG in cpu/aarch64/generate.py to move to a newer LLVM release.",
         "",
         'visibility(["//cpu/aarch64/...", "//private", "//tests"])',
         "",
@@ -215,33 +187,32 @@ def render(features, commit, descriptions, mattr_overrides):
     ])
 
 
+def read(rlocation):
+    with open(runfiles.Create().Rlocation(rlocation), encoding="utf-8") as f:
+        return f.read()
+
+
 def main(argv):
-    if len(argv) > 3:
-        raise SystemExit("usage: generate.py [AArch64Features.td [Host.cpp]]")
-    if len(argv) >= 2:
-        with open(argv[1], encoding="utf-8") as f:
-            text = f.read()
-    else:
-        text = fetch(TD_PATH)
-    if len(argv) == 3:
-        with open(argv[2], encoding="utf-8") as f:
-            host_text = f.read()
-    else:
-        host_text = fetch(HOST_PATH)
-    features, descriptions, mattr_overrides = parse(text)
-    models = parse_cpu_models(host_text)
-    commit = resolve_commit()
+    if len(argv) != 3:
+        raise SystemExit("usage: {}".format(REGENERATE_COMMAND))
+    workspace = os.environ.get("BUILD_WORKSPACE_DIRECTORY")
+    if not workspace:
+        raise SystemExit("Run this with `{}` so it can write into the repository.".format(REGENERATE_COMMAND))
+    with open(os.path.join(workspace, "MODULE.bazel"), encoding="utf-8") as f:
+        version = _LLVM_VERSION.search(f.read()).group(1)
+    features, descriptions, mattr_overrides = parse(read(argv[1]))
+    models = parse_cpu_models(read(argv[2]))
     missing = [feature for feature in features if feature not in descriptions]
     if missing:
         print("warning: no description for: " + ", ".join(missing), file=sys.stderr)
-    with open(OUTPUT, "w", encoding="utf-8") as f:
-        f.write(render(features, commit, descriptions, mattr_overrides))
-    with open(CPU_MODELS_OUTPUT, "w", encoding="utf-8") as f:
-        f.write(render_cpu_models(models, commit))
-    print(
-        "Wrote {}: {} features at {} (commit {})".format(OUTPUT, len(features), LLVM_TAG, commit)
-    )
-    print("Wrote {}: {} CPU models".format(CPU_MODELS_OUTPUT, len(models)))
+    features_output = os.path.join(workspace, "cpu", "aarch64", "aarch64_features.bzl")
+    models_output = os.path.join(workspace, "prebuilt", "aarch64_cpu_models.inc")
+    with open(features_output, "w", encoding="utf-8") as f:
+        f.write(render(features, version, descriptions, mattr_overrides))
+    with open(models_output, "w", encoding="utf-8") as f:
+        f.write(render_cpu_models(models, version))
+    print("Wrote {}: {} features from llvm-project {}".format(features_output, len(features), version))
+    print("Wrote {}: {} CPU models".format(models_output, len(models)))
 
 
 if __name__ == "__main__":

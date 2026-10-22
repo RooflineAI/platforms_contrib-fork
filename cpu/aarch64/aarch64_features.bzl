@@ -1,9 +1,7 @@
 # GENERATED FILE, DO NOT EDIT BY HAND.
 #
-# Source: llvm/llvm-project llvmorg-23.1.2 (commit 85ac560262434c9ccfc0c183ec22d4138ed647fb), llvm/lib/Target/AArch64/AArch64Features.td
-# Regenerate: python3 cpu/aarch64/generate.py
-#
-# Update LLVM_TAG in cpu/aarch64/generate.py to move to a newer LLVM release.
+# Source: llvm-project 23.1.2 (the llvm module in MODULE.bazel), llvm/lib/Target/AArch64/AArch64Features.td
+# Regenerate: bazel run //cpu/aarch64:generate
 
 visibility(["//cpu/aarch64/...", "//private", "//tests"])
 
