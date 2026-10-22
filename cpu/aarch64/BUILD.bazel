@@ -29,7 +29,8 @@ bzl_library(
 )
 
 # Regenerates aarch64_features.bzl and //prebuilt:aarch64_cpu_models.inc from the LLVM version pinned
-# by the llvm module in MODULE.bazel: `bazel run //cpu/aarch64:generate`.
+# by the llvm module in MODULE.bazel: `bazel run //cpu/aarch64:generate`. Manual so that wildcard
+# builds do not resolve a Python toolchain.
 py_binary(
     name = "generate",
     srcs = ["generate.py"],
@@ -41,5 +42,6 @@ py_binary(
         "@llvm-project//llvm:lib/Target/AArch64/AArch64Features.td",
         "@llvm-project//llvm:lib/TargetParser/Host.cpp",
     ],
+    tags = ["manual"],
     deps = ["@rules_python//python/runfiles"],
 )
